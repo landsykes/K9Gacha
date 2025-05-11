@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gacha Collection & Leaderboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #111;
+      color: white;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      width: 100%;
+    }
+
+    .collection, .leaderboard {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .collection {
+      border-right: 2px solid #333;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      position: relative;
+      padding: 5px;
+      border-radius: 10px;
+      overflow: hidden;
+      text-align: center;
+      font-size: 0.8rem;
+    }
+
+    .card img {
+      width: 100%;
+      border-radius: 8px;
+      filter: brightness(1);
+    }
+
+    .card.locked img {
+      filter: brightness(0.2) grayscale(1);
+    }
+
+    .card.locked .name {
+      color: #888;
+    }
+
+    .card .name {
+      margin-top: 5px;
+    }
+
+    /* Rarety Styles */
+    .card.common {
+      border: 2px solid #888;
+      background: #222;
+    }
+
+    .card.rare {
+      border: 2px solid #3fa9f5;
+      background: #1e2a40;
+    }
+
+    .card.ultra {
+      border: 2px solid #f542dd;
+      background: #2a1e40;
+    }
+
+    .card.secret {
+      border: 2px solid gold;
+      background: #403a1e;
+    }
+
+    .leaderboard h2 {
+      margin-bottom: 10px;
+      font-size: 1.4rem;
+    }
+
+    .leaderboard ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .leaderboard li {
+      padding: 8px;
+      background: #222;
+      margin-bottom: 5px;
+      border-radius: 6px;
+    }
+
+    .highlight {
+      background: #4caf50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="collection">
+      <h2>🎁 Ta Collection</h2>
+      <div class="grid" id="rewardGrid"></div>
+    </div>
+    <div class="leaderboard">
+      <h2>🏆 Leaderboard</h2>
+      <ul id="leaderboardList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const allRewards = [
+      { image: 'https://i.postimg.cc/2ydy9SpH/Bocchi-the-K9.png', name: 'Bocchi the K9', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/mZ7Pg8cQ/ChefK9.png', name: 'ChefK9', rarity: 'common' },
+      { image: 'https://i.postimg.cc/gkDrvjHj/Geega9.png', name: 'Geega9', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/rFcK0xW7/Glorp9.png', name: 'Glorp9', rarity: 'common' },
+      { image: 'https://i.postimg.cc/Vkkv4wKR/Golden-K9.png', name: 'Golden K9', rarity: 'common' },
+      { image: 'https://i.postimg.cc/R03F5R5J/K9Alien.png', name: 'K9Alien', rarity: 'secret' },
+      { image: 'https://i.postimg.cc/TPZPRDf7/K9Blue.png', name: 'K9Blue', rarity: 'secret' },
+      { image: 'https://i.postimg.cc/sX7g1g2V/K9Clown.png', name: 'K9Clown', rarity: 'common' },
+      { image: 'https://i.postimg.cc/Bb3QFf82/K9Cupid.png', name: 'K9Cupid', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/vTv8L29k/K9Froot.png', name: 'K9Froot', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/vHQZHMws/K9-Guildie.png', name: 'K9 Guildie', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/gcy0Wj5s/K9Haruka.png', name: 'K9Haruka', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/fTBTVFM0/K9Henya.png', name: 'K9Henya', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/L854LTsQ/K9Hestia.png', name: 'K9Hestia', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/0NJ8HyDp/K9Hime.png', name: 'K9Hime', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/dVfsByks/K9Hotaru.png', name: 'K9Hotaru', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/85Q18gmx/K9Jared.png', name: 'K9Jared', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/B6TJ47hb/K9Kurt.png', name: 'K9Kurt', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/Rhv4F18R/K9lotl.png', name: 'K9lotl', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/1XMPNn1Z/K9Melody.png', name: 'K9Melody', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/c1cdzjg5/K9Momo.png', name: 'K9Momo', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/rFFq2J5y/K9Monarq.png', name: 'K9Monarq', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/ncRpFD14/K9Mousey.png', name: 'K9Mousey', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/htXgftCH/K9Nagi.png', name: 'K9Nagi', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/8zxGWg9s/K9Nerd.png', name: 'K9Nerd', rarity: 'common' },
+      { image: 'https://i.postimg.cc/XvFbkD6L/K9Peke.png', name: 'K9Peke', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/k4vPk64t/K9-Phantom.png', name: 'K9 Phantom', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/Y9HwnfpH/K9Pirate.png', name: 'K9Pirate', rarity: 'common' },
+      { image: 'https://i.postimg.cc/vT8wMYg2/K9Pomni.png', name: 'K9Pomni', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/D0Ckw91v/K9Quinn.png', name: 'K9Quinn', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/NGbwDHS3/K9Saff.png', name: 'K9Saff', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/SNvbFpyV/K9-Saiiren.png', name: 'K9 Saiiren', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/MKTJFG8v/K9Shiro.png', name: 'K9Shiro', rarity: 'common' },
+      { image: 'https://i.postimg.cc/zGHZqPvN/K9son.png', name: 'K9son', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/6QssqL4v/K9-Whisper.png', name: 'K9 Whisper', rarity: 'common' },
+      { image: 'https://i.postimg.cc/8CL26JLn/K9Zen.png', name: 'K9Zen', rarity: 'ultra' },
+      { image: 'https://i.postimg.cc/W3jQ6Nnp/Mysterious-K9.png', name: 'Mysterious K9', rarity: 'secret' },
+      { image: 'https://i.postimg.cc/ZRcXwG78/PP9-Slayer.png', name: 'PP9 Slayer', rarity: 'rare' },
+      { image: 'https://i.postimg.cc/prL44s4g/Rainbow-K9.png', name: 'Rainbow K9', rarity: 'common' },
+      { image: 'https://i.postimg.cc/T1NF6rXh/The-Gunrun9.png', name: 'The Gunrun9', rarity: 'ultra' },
+    ];
+
+    // Simulated user data (replace with Firebase fetch later)
+    const userData = {
+      username: 'viewer123',
+      rewards: {
+        'ChefK9': 1,
+        'K9Cupid': 1,
+        'K9Shiro': 2,
+        'Geega9': 1
+      },
+      points: 430
+    };
+
+    const leaderboardData = [
+      { username: 'TopViewer1', points: 1200 },
+      { username: 'TopViewer2', points: 1000 },
+      { username: 'viewer123', points: 430 },
+      { username: 'Viewer4', points: 300 },
+      { username: 'Viewer5', points: 250 }
+    ];
+
+    function renderCollection() {
+      const grid = document.getElementById('rewardGrid');
+      allRewards.forEach(reward => {
+        const owned = userData.rewards[reward.name];
+        const card = document.createElement('div');
+        card.className = `card ${reward.rarity} ${owned ? '' : 'locked'}`;
+        card.innerHTML = `
+          <img src="${reward.image}" alt="${reward.name}" />
+          <div class="name">${owned ? reward.name : '???'}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderLeaderboard() {
+      const list = document.getElementById('leaderboardList');
+      leaderboardData.forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.username} - ${entry.points} pts`;
+        if (entry.username === userData.username) {
+          li.classList.add('highlight');
+        }
+        list.appendChild(li);
+      });
+    }
+
+    renderCollection();
+    renderLeaderboard();
+  </script>
+</body>
+</html>
