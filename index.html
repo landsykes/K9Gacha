@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>K9 Gacha Collection</title>
+  <!-- Firebase App (core SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
+<!-- Realtime Database SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -172,5 +177,126 @@
       rewardsContainer.appendChild(card);
     });
   </script>
+  
+  <script>
+  function getViewerIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('viewerId');
+  }
+
+  const viewerId = getViewerIdFromUrl();
+  if (!viewerId) {
+    alert("No viewerId found in the URL!");
+  } else {
+    console.log("Viewer ID detected:", viewerId);
+    // You can use viewerId here to fetch data from Firebase, like:
+    // firebase.database().ref("users/" + viewerId).once(...)
+  }
+</script>
+<script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyB1WMEiotytAy8ZvgVALozdUg9qbpYfOGA",
+  authDomain: "gachak9s.firebaseapp.com",
+  projectId: "gachak9s",
+  storageBucket: "gachak9s.firebasestorage.app",
+  messagingSenderId: "951435414740",
+  appId: "1:951435414740:web:5acbb87e8e309c62a1bf41"
+};
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // Get viewerId from URL
+  function getViewerIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('viewerId');
+  }
+
+  const viewerId = getViewerIdFromUrl();
+  if (!viewerId) {
+    alert("No viewerId found in the URL!");
+  } else {
+    console.log("Viewer ID detected:", viewerId);
+    loadViewerData(viewerId);
+  }
+
+  // Load viewer collection and update UI
+  function loadViewerData(viewerId) {
+    const viewerRef = database.ref("users/" + viewerId);
+
+    viewerRef.once("value").then(snapshot => {
+      const data = snapshot.val();
+
+      if (!data || !data.collection) {
+        console.log("No data found for viewer.");
+        return;
+      }
+
+      const viewerCollection = data.collection;
+      const totalPoints = data.totalPoints || 0;
+
+      const rewardsContainer = document.getElementById('rewards');
+      rewardsContainer.innerHTML = ''; // Clear previous cards
+
+      rewards.forEach(reward => {
+        const obtained = viewerCollection[reward.name] || 0;
+        const isLocked = obtained === 0;
+
+        const card = document.createElement('div');
+        card.className = `reward-card ${reward.rarity} ${isLocked ? 'locked' : ''}`;
+        card.innerHTML = `
+          <img src="${reward.image}" alt="${reward.name}" />
+          <div class="name">${isLocked ? '???' : reward.name}</div>
+          <div class="points">${reward.points} pts</div>
+          <div class="count">x${obtained}</div>
+        `;
+        rewardsContainer.appendChild(card);
+      });
+
+      updateLeaderboard(viewerId, totalPoints);
+    });
+  }
+
+  function updateLeaderboard(currentViewerId, currentViewerPoints) {
+  const leaderboardRef = database.ref("users");
+
+  leaderboardRef.once("value").then(snapshot => {
+    const usersData = snapshot.val();
+    if (!usersData) return;
+
+    // Convert to array and sort
+    const leaderboardArray = Object.entries(usersData).map(([id, data]) => ({
+      id,
+      points: data.totalPoints || 0
+    }));
+
+    leaderboardArray.sort((a, b) => b.points - a.points);
+
+    const leaderboard = document.getElementById('leaderboard');
+    leaderboard.innerHTML = ''; // Clear old entries
+
+    // Show top 10
+    leaderboardArray.slice(0, 10).forEach((user, index) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>#${index + 1} ${user.id}</strong>: ${user.points} pts`;
+      if (user.id === currentViewerId) li.style.color = '#ffd700'; // highlight self
+      leaderboard.appendChild(li);
+    });
+
+    // Find rank of current viewer if not in top 10
+    const viewerIndex = leaderboardArray.findIndex(u => u.id === currentViewerId);
+    if (viewerIndex >= 10) {
+      const li = document.createElement('li');
+      li.style.marginTop = '1em';
+      li.style.fontStyle = 'italic';
+      li.innerHTML = `You are ranked <strong>#${viewerIndex + 1}</strong> with ${currentViewerPoints} pts`;
+      leaderboard.appendChild(li);
+    }
+  });
+}
+
+</script>
+
 </body>
 </html>
